@@ -15,7 +15,7 @@ let BASEDOM = "https://whisperingauroras.com";
 interface Servers {
   name: string | null;
   dataHash: string | null;
-}
+} 
 interface APIResponse {
   name: string | null;
   image: string | null;
