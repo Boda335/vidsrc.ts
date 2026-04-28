@@ -100,85 +100,45 @@ async function rcpGrabber(html: string): Promise<RCPResponse | null> {
     data: match[1],
   };
 }
-async function tmdbScrape(
-  tmdbId: string,
-  type: "movie" | "tv",
-  season?: number,
-  episode?: number
-) {
-  if (season && episode && type === "movie") {
+
+async function tmdbScrape(tmdbId: string, type: "movie" | "tv", season?: number, episode?: number) {
+  if (season && episode && (type === "movie")) {
     throw new Error("Invalid Data.");
   }
-
-  const url =
-    type === "movie"
-      ? `https://vsembed.ru/embed/${type}?tmdb=${tmdbId}`
-      : `https://vsembed.ru/embed/${type}?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
-
+  const url = (type === "movie")
+    ? `https://vsembed.ru/embed/${type}?tmdb=${tmdbId}`
+    : `https://vsembed.ru/embed/${type}?tmdb=${tmdbId}&season=${season}&episode=${episode}`;
   const embed = await fetch(url);
   const embedResp = await embed.text();
 
-  // 🧠 debug info
-  const debug: any = {
-    embedLength: embedResp?.length || 0,
-    serversFound: 0,
-    rcpRequests: 0,
-    results: 0,
-    reason: ""
-  };
-
+  // get some metadata
   const { servers, title } = await serversLoad(embedResp);
-
-  debug.serversFound = servers?.length || 0;
-
-  if (!servers || servers.length === 0) {
-    debug.reason = "No servers parsed from HTML";
-    return { debug, data: [] };
-  }
-
-  const rcpFetchPromises = servers.map((element) =>
-    fetch(`${BASEDOM}/rcp/${element.dataHash}`)
-  );
-
-  debug.rcpRequests = rcpFetchPromises.length;
-
+console.log("embedResp length:", embedResp.length);
+console.log("servers:", servers);
+  const rcpFetchPromises = servers.map(element => {
+    return fetch(`${BASEDOM}/rcp/${element.dataHash}`);
+  });
   const rcpResponses = await Promise.all(rcpFetchPromises);
 
-  const prosrcrcp = await Promise.all(
-    rcpResponses.map(async (response) => {
-      return rcpGrabber(await response.text());
-    })
-  );
+  const prosrcrcp = await Promise.all(rcpResponses.map(async (response) => {
+    return rcpGrabber(await response.text());
+  }));
 
   const apiResponse: APIResponse[] = [];
-
   for (const item of prosrcrcp) {
     if (!item) continue;
-
-    if (!item.data) continue;
-
-    if (item.data.substring(0, 8) === "/prorcp/") {
-      const stream = await PRORCPhandler(item.data.replace("/prorcp/", ""));
-
-      apiResponse.push({
-        name: title,
-        image: item.metadata.image,
-        mediaId: tmdbId,
-        stream,
-        referer: BASEDOM,
-      });
+    switch (item.data.substring(0, 8)) {
+      case "/prorcp/":
+        apiResponse.push({
+          name: title,
+          image: item.metadata.image,
+          mediaId: tmdbId,
+          stream: await PRORCPhandler(item.data.replace("/prorcp/", "")),
+          referer: BASEDOM,
+        });
+        break;
     }
   }
-
-  debug.results = apiResponse.length;
-
-  if (apiResponse.length === 0) {
-    debug.reason = "No valid streams extracted";
-  }
-
-  return {
-    debug,
-    data: apiResponse,
-  };
+  return apiResponse;
 }
 export default tmdbScrape;
