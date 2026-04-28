@@ -21,10 +21,12 @@ export default async function handler(
 
     return res.status(200).json(data); // 👈 مهم
   } catch (err) {
-    if (err instanceof Error) {
-      return res.status(500).json({ error: err.message }); // 👈 مهم
-    } else {
-      return res.status(500).json({ error: "Unknown error" }); // 👈 مهم
-    }
+  console.error("ERROR:", err); // 👈 ضيف دي
+
+  if (err instanceof Error) {
+    return res.status(500).json({ error: err.message });
+  } else {
+    return res.status(500).json({ error: "Unknown error" });
   }
+}
 }
