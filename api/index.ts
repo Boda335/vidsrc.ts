@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import tmdbScrape from "../vidsrc";
+import tmdbScrape from "../src/vidsrc";
 
 export default async function handler(
   req: VercelRequest,
