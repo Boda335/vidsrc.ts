@@ -6,6 +6,10 @@
     "@vercel/node": "^5.7.13",
     "cheerio": "^1.0.0"
   },
+  "scripts": {
+    "dev": "tsx watch api/scrape.ts",
+    "build": "tsc"
+  },
   "devDependencies": {
     "typescript": "5.2.2"
   }
